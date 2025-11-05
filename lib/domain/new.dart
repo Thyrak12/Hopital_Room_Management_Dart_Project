@@ -11,11 +11,9 @@ class Department {
 
   Department(this.name);
 
-  List<Room> listRooms() => rooms;
-
   void addRoom(Room room) => rooms.add(room);
-
   void removeRoom(Room room) => rooms.remove(room);
+  List<Room> listRooms() => rooms;
 }
 
 class Patient {
@@ -30,9 +28,7 @@ class Patient {
   Patient(this.name, this.age);
 
   void assignBed(Bed bed) {
-    if (bed.isFree == false) {
-      throw Exception('Bed is occupied, please choose another');
-    }
+    if (!bed.isFree) throw Exception('Bed is occupied');
     currentBed = bed;
     bed.isFree = false;
     admissionDate = DateTime.now();
@@ -47,9 +43,7 @@ class Patient {
   }
 
   void transferBed(Bed newBed) {
-    if (currentBed != null) {
-      currentBed!.isFree = true;
-    }
+    if (currentBed != null) currentBed!.isFree = true;
     currentBed = newBed;
     newBed.isFree = false;
   }
@@ -72,6 +66,5 @@ class Room {
   Room(this.roomNO, this.type);
 
   List<Bed> availableBeds() => beds.where((b) => b.isFree).toList();
-
   List<Bed> allBeds() => beds;
 }

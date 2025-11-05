@@ -1,201 +1,204 @@
 import 'dart:io';
 import '../domain/new.dart';
+import '../data/data.dart';
 
-class HospitalSystem {
-  final List<Department> departments = [];
-  final List<Patient> patients = [];
+class HospitalUI {
+  final List<Patient> patients = PatientData.mockPatients;
+  final List<Department> departments = DepartmentData.mockDepartments;
 
   void start() {
     while (true) {
-      print('\n=== Hospital Bed Allocation System ===');
-      print('1. Create Department');
-      print('2. Create Room');
-      print('3. Create Bed');
-      print('4. Create Patient');
-      print('5. Assign Bed to Patient');
-      print('6. Discharge Patient');
-      print('7. List Departments, Rooms & Beds');
-      print('8. List Patients');
-      print('0. Exit');
-      stdout.write('Choose option: ');
+      print("\n=== Hospital Room Management ===");
+      print("1. Add Room");
+      print("2. Remove Room");
+      print("3. Add Bed to Room");
+      print("4. Assign Bed to Patient");
+      print("5. Discharge Patient");
+      print("6. Transfer Patient to Another Bed");
+      print("7. List Departments / Rooms / Beds");
+      print("8. List Patients");
+      print("0. Exit");
+      stdout.write("> ");
       var input = stdin.readLineSync();
 
       switch (input) {
-        case '1':
-          createDepartment();
-          break;
-        case '2':
-          createRoom();
-          break;
-        case '3':
-          createBed();
-          break;
-        case '4':
-          createPatient();
-          break;
-        case '5':
-          assignBed();
-          break;
-        case '6':
-          dischargePatient();
-          break;
-        case '7':
-          listStructure();
-          break;
-        case '8':
-          listPatients();
-          break;
-        case '0':
-          print('Bye!');
-          return;
-        default:
-          print('Invalid option');
+        case "1": addRoomUI(); break;
+        case "2": removeRoomUI(); break;
+        case "3": addBedUI(); break;
+        case "4": assignBedUI(); break;
+        case "5": dischargePatientUI(); break;
+        case "6": transferPatientUI(); break;
+        case "7": listStructure(); break;
+        case "8": listPatients(); break;
+        case "0": return;
+        default: print("Invalid option");
       }
     }
   }
 
-  void createDepartment() {
-    stdout.write('Enter Department name: ');
-    var name = stdin.readLineSync()!;
-    departments.add(Department(name));
-    print('Department created');
+  // ----- Helpers -----
+  Department? pickDepartment() {
+    print("Departments: ${departments.map((d) => d.name).join(", ")}");
+    stdout.write("Enter department name: ");
+    var depName = stdin.readLineSync()!;
+    try {
+      return departments.firstWhere(
+          (d) => d.name.toLowerCase() == depName.toLowerCase());
+    } catch (_) {
+      print("Department not found");
+      return null;
+    }
   }
 
-  void createRoom() {
-    if (departments.isEmpty) {
-      print('No departments. Create department first.');
-      return;
+  Room? pickRoom(Department dep) {
+    if (dep.rooms.isEmpty) {
+      print("No rooms in ${dep.name}");
+      return null;
     }
-
-    print('Select Department:');
-    for (int i = 0; i < departments.length; i++) {
-      print('$i. ${departments[i].name}');
+    print("Rooms in ${dep.name}: ${dep.rooms.map((r) => r.roomNO).join(", ")}");
+    stdout.write("Enter room number: ");
+    var rn = stdin.readLineSync()!;
+    try {
+      return dep.rooms.firstWhere((r) => r.roomNO == rn);
+    } catch (_) {
+      print("Room not found");
+      return null;
     }
-    stdout.write('index: ');
-    var idx = int.parse(stdin.readLineSync()!);
-
-    stdout.write('Enter room number: ');
-    var roomNo = stdin.readLineSync()!;
-
-    print('Select RoomType: 0.ACU 1.VIP 2.WARD');
-    var typeIdx = int.parse(stdin.readLineSync()!);
-
-    var room = Room(roomNo, RoomType.values[typeIdx]);
-    departments[idx].addRoom(room);
-
-    print('Room created ✅');
   }
 
-  void createBed() {
-    var room = pickRoom();
-    if (room == null) return;
-
-    stdout.write('Enter bed number: ');
-    var bNo = stdin.readLineSync()!;
-
-    room.beds.add(Bed(bedNumber: bNo));
-    print('Bed created ✅');
-  }
-
-  void createPatient() {
-    stdout.write('Enter patient name: ');
-    var name = stdin.readLineSync()!;
-
-    stdout.write('Enter patient age: ');
-    var age = int.parse(stdin.readLineSync()!);
-
-    patients.add(Patient(name, age));
-    print('Patient created ✅');
-  }
-
-  void assignBed() {
-    if (patients.isEmpty) {
-      print('No patients.');
-      return;
-    }
-
-    print('Select Patient to assign:');
-    for (int i = 0; i < patients.length; i++) {
-      var p = patients[i];
-      print('$i. ${p.name} (Bed: ${p.currentBed?.bedNumber ?? "none"})');
-    }
-    stdout.write('index: ');
-    var pIdx = int.parse(stdin.readLineSync()!);
-
-    var room = pickRoom();
-    if (room == null) return;
-
+  Bed? pickBed(Room room) {
     var freeBeds = room.availableBeds();
     if (freeBeds.isEmpty) {
-      print('No free beds in this room.');
-      return;
+      print("No free beds in this room");
+      return null;
     }
-
-    print('Select Bed:');
-    for (int i = 0; i < freeBeds.length; i++) {
-      print('$i. Bed ${freeBeds[i].bedNumber}');
+    print("Free beds: ${freeBeds.map((b) => b.bedNumber).join(", ")}");
+    stdout.write("Enter bed number: ");
+    var bn = stdin.readLineSync()!;
+    try {
+      return freeBeds.firstWhere((b) => b.bedNumber == bn);
+    } catch (_) {
+      print("Bed not found");
+      return null;
     }
-    stdout.write('index: ');
-    var bIdx = int.parse(stdin.readLineSync()!);
-
-    patients[pIdx].assignBed(freeBeds[bIdx]);
-    print('Bed assigned ✅');
   }
 
-  void dischargePatient() {
-    listPatients();
-    stdout.write('Select patient index: ');
-    var idx = int.parse(stdin.readLineSync()!);
+  Patient? pickPatient() {
+    print("Patients: ${patients.map((p) => p.name).join(", ")}");
+    stdout.write("Enter patient name: ");
+    var n = stdin.readLineSync()!;
+    try {
+      return patients.firstWhere(
+          (p) => p.name.toLowerCase() == n.toLowerCase());
+    } catch (_) {
+      print("Patient not found");
+      return null;
+    }
+  }
 
-    patients[idx].discharge();
-    print('Patient discharged ✅');
+  // ----- UI Actions -----
+  void addRoomUI() {
+    var dep = pickDepartment();
+    if (dep == null) return;
+
+    stdout.write("Room number: ");
+    var rn = stdin.readLineSync()!;
+
+    stdout.write("Room type (ACU/VIP/WARD): ");
+    var tp = stdin.readLineSync()!.toUpperCase();
+    try {
+      var type = RoomType.values.firstWhere((t) => t.name == tp);
+      var room = Room(rn, type);
+      dep.addRoom(room);
+      print("Room added ✅");
+    } catch (_) {
+      print("Invalid room type");
+    }
+  }
+
+  void removeRoomUI() {
+    var dep = pickDepartment();
+    if (dep == null) return;
+
+    var room = pickRoom(dep);
+    if (room == null) return;
+
+    dep.removeRoom(room);
+    print("Room removed ✅");
+  }
+
+  void addBedUI() {
+    var dep = pickDepartment();
+    if (dep == null) return;
+
+    var room = pickRoom(dep);
+    if (room == null) return;
+
+    stdout.write("Bed number: ");
+    var bn = stdin.readLineSync()!;
+    room.beds.add(Bed(bedNumber: bn));
+    print("Bed added ✅");
+  }
+
+  void assignBedUI() {
+    var p = pickPatient();
+    if (p == null) return;
+
+    var dep = pickDepartment();
+    if (dep == null) return;
+
+    var room = pickRoom(dep);
+    if (room == null) return;
+
+    var bed = pickBed(room);
+    if (bed == null) return;
+
+    p.assignBed(bed);
+    print("Bed assigned ✅");
+  }
+
+  void dischargePatientUI() {
+    var p = pickPatient();
+    if (p == null) return;
+
+    p.discharge();
+    print("Patient discharged ✅");
+  }
+
+  void transferPatientUI() {
+    var p = pickPatient();
+    if (p == null) return;
+
+    print("Select the new department and room for the patient:");
+    var dep = pickDepartment();
+    if (dep == null) return;
+
+    var room = pickRoom(dep);
+    if (room == null) return;
+
+    var bed = pickBed(room);
+    if (bed == null) return;
+
+    p.transferBed(bed);
+    print("Patient transferred to bed ${bed.bedNumber} in room ${room.roomNO} ✅");
   }
 
   void listStructure() {
-    for (var d in departments) {
-      print('Department: ${d.name}');
-      for (var r in d.rooms) {
-        print('  Room ${r.roomNO} (${r.type})');
+    for (var dep in departments) {
+      print("\nDepartment: ${dep.name}");
+      for (var r in dep.rooms) {
+        print("  Room ${r.roomNO} (${r.type})");
         for (var b in r.beds) {
-          print('    Bed ${b.bedNumber} - ${b.isFree ? "Free" : "Occupied"}');
+          print("    Bed ${b.bedNumber}: ${b.isFree ? 'free' : 'occupied'}");
         }
       }
     }
   }
 
   void listPatients() {
-    for (int i = 0; i < patients.length; i++) {
-      var p = patients[i];
-      print('$i. ${p.name} (Bed: ${p.currentBed?.bedNumber ?? "none"})');
+    print("\nPatients:");
+    for (var p in patients) {
+      print("${p.name} (${p.currentBed?.bedNumber ?? 'no bed'})");
     }
-  }
-
-  Room? pickRoom() {
-    if (departments.isEmpty) {
-      print('No departments yet.');
-      return null;
-    }
-
-    print('Select Department:');
-    for (int i = 0; i < departments.length; i++) {
-      print('$i. ${departments[i].name}');
-    }
-    stdout.write('index: ');
-    var dIdx = int.parse(stdin.readLineSync()!);
-
-    if (departments[dIdx].rooms.isEmpty) {
-      print('No rooms in this department.');
-      return null;
-    }
-
-    print('Select Room:');
-    for (int i = 0; i < departments[dIdx].rooms.length; i++) {
-      var r = departments[dIdx].rooms[i];
-      print('$i. Room ${r.roomNO}');
-    }
-    stdout.write('index: ');
-    var rIdx = int.parse(stdin.readLineSync()!);
-
-    return departments[dIdx].rooms[rIdx];
   }
 }

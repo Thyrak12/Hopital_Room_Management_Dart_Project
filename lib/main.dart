@@ -1,6 +1,6 @@
 import './ui/ui.dart';
 
 void main() {
-  var app = HospitalSystem();
+  var app =  HospitalUI();
   app.start();
 }

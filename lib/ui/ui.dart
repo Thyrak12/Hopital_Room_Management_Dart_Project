@@ -217,7 +217,6 @@ class HospitalUI {
     print("Bed added ✅");
   }
 
-
 // ===== UI Actions: Remove Bed =====
   void removeBedUI() {
     var dep = pickDepartment();
@@ -316,7 +315,16 @@ class HospitalUI {
   void listPatients() {
     print("\n=== Patients ===");
     for (var p in patRepo.patients) {
-      print("${p.name} (${p.currentBedId ?? 'no bed'})");
+      var bed = bedRepo.beds.firstWhere(
+        (b) => b.id == p.currentBedId,
+        orElse: () => null as Bed,
+      );
+
+      var bedDisplay = bed != null
+          ? "${bed.bedNumber} (${bed.isFree ? 'free' : 'occupied'})"
+          : "no bed";
+
+      print("${p.name} - Bed: $bedDisplay");
     }
   }
 }

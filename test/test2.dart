@@ -10,7 +10,6 @@ void main() {
   late Patient patient;
 
   setUp(() {
-    // Fresh initialization before each test
     dep = Department("Cardiology");
     room1 = Room("101", RoomType.WARD);
     room2 = Room("102", RoomType.ACU);
